@@ -5,14 +5,13 @@ import com.miroshnychenko.kotlinweb.entity.ProductItem
 import com.miroshnychenko.kotlinweb.service.OrderService
 import com.miroshnychenko.kotlinweb.service.ProductItemService
 import com.miroshnychenko.kotlinweb.session.SessionObject
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpSession
 import org.springframework.test.web.servlet.MockMvc
@@ -29,10 +28,10 @@ class TestProductItemController {
     @Autowired
     private val mapper: ObjectMapper? = null
 
-    @MockBean
+    @MockkBean
     private val service: ProductItemService? = null
 
-    @MockBean
+    @MockkBean
     private val orderService: OrderService? = null
 
     @Test
@@ -46,7 +45,8 @@ class TestProductItemController {
         val content = mapper!!.writeValueAsString(item)
         val session = MockHttpSession()
         session.setAttribute(SessionObject.SESSION_ORDER.name, 1L)
-        Mockito.`when`(service?.addItem(ArgumentMatchers.notNull(), ArgumentMatchers.notNull())).thenReturn(orderItem)
+        every { service?.addItem(any(), any()) } returns orderItem
+        every { orderService?.getOrder(any()) } returns null
         mockMvc?.perform(MockMvcRequestBuilders.post("/item")
                 .contentType(MediaType.APPLICATION_JSON)
                 .session(session)
@@ -66,7 +66,8 @@ class TestProductItemController {
         val content = mapper!!.writeValueAsString(item)
         val session = MockHttpSession()
         session.setAttribute(SessionObject.SESSION_ORDER.name, id)
-        Mockito.`when`(service?.removeItem(ArgumentMatchers.any())).thenReturn(item)
+        every { service?.removeItem(any()) } returns item
+        every { orderService?.removeItem(any(), any()) } returns null
         mockMvc!!.perform(MockMvcRequestBuilders.delete("/item/$id")
                 .contentType(MediaType.APPLICATION_JSON)
                 .session(session)
@@ -84,7 +85,7 @@ class TestProductItemController {
         val updatedItem = ProductItem()
         updatedItem.quantity = 100
         val content = mapper!!.writeValueAsString(item)
-        Mockito.`when`(service?.updateItem(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(updatedItem)
+        every { service?.updateItem(any(), any()) } returns updatedItem
         mockMvc!!.perform(MockMvcRequestBuilders.put("/item/0")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(content))

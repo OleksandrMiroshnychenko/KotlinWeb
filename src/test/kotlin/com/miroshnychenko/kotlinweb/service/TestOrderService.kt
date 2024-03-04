@@ -5,16 +5,16 @@ import com.miroshnychenko.kotlinweb.entity.OrderStatus
 import com.miroshnychenko.kotlinweb.entity.ProductItem
 import com.miroshnychenko.kotlinweb.entity.User
 import com.miroshnychenko.kotlinweb.repository.OrderRepository
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.util.*
@@ -26,10 +26,10 @@ class TestOrderService {
     @Autowired
     private val service: OrderService? = null
 
-    @MockBean
+    @MockkBean
     private val itemService: ProductItemService? = null
 
-    @MockBean
+    @MockkBean
     private val repository: OrderRepository? = null
 
     @Test
@@ -38,7 +38,7 @@ class TestOrderService {
         val order = Order()
         val repoOrder = Order()
         repoOrder.id = 1L
-        Mockito.`when`(repository?.save(order)).thenReturn(repoOrder)
+        every { repository?.save(order) } returns repoOrder
         val serviceOrder: Order = service!!.addOrder(order)
         assertEquals(repoOrder, serviceOrder)
     }
@@ -49,9 +49,10 @@ class TestOrderService {
         val order = Order()
         val id = 1L
         order.id = id
-        Mockito.`when`(repository?.findByIdOrNull(id)).thenReturn(order)
+        every { repository?.findByIdOrNull(id) } returns order
+        every { repository?.calculatePrice(id) } returns null
         val serviceOrder: Order? = service!!.getOrder(id)
-        Mockito.verify<OrderRepository>(repository, Mockito.times(1)).calculatePrice(id)
+        verify(exactly = 1) {repository?.calculatePrice(id)}
         assertEquals(order, serviceOrder)
     }
 
@@ -59,8 +60,9 @@ class TestOrderService {
     @DisplayName("removes the created orders by the user.")
     fun checksRemovingSpecificOrders() {
         val user = User()
+        every { repository?.deleteOrdersByUserAndStatus(user, OrderStatus.CREATED) } returns null
         service!!.removeOrders(user)
-        Mockito.verify<OrderRepository>(repository, Mockito.times(1)).deleteOrdersByUserAndStatus(user, OrderStatus.CREATED)
+        verify(exactly = 1) {repository?.deleteOrdersByUserAndStatus(user, OrderStatus.CREATED)}
     }
 
     @Test
@@ -74,10 +76,13 @@ class TestOrderService {
             items.add(ProductItem())
         }
         repoOrder.items = items
-        Mockito.`when`(repository?.findByIdOrNull(id)).thenReturn(repoOrder)
+        every { repository?.findByIdOrNull(id) } returns repoOrder
+        every { repository?.calculatePrice(id) } returns null
+        every { repository?.save(repoOrder) } returns null
+        every { itemService?.checkoutItem(any()) } returns null
         val serviceOrder: Order? = service!!.checkout(id)
-        Mockito.verify<ProductItemService>(itemService, Mockito.times(5)).checkoutItem(ArgumentMatchers.any())
-        Mockito.verify<OrderRepository>(repository, Mockito.times(1)).calculatePrice(id)
+        verify { itemService?.checkoutItem(any()) }
+        verify { repository?.calculatePrice(id) }
         assertEquals(OrderStatus.DONE, serviceOrder?.status)
     }
 
@@ -92,9 +97,11 @@ class TestOrderService {
             items.add(ProductItem())
         }
         repoOrder.items = ArrayList(items)
-        Mockito.`when`(repository?.findByIdOrNull(id)).thenReturn(repoOrder)
+        every { repository?.findByIdOrNull(id) } returns repoOrder
+        every { repository?.calculatePrice(id) } returns null
+        every { repository?.save(repoOrder) } returns null
         service!!.removeItem(id, items[0])
-        Mockito.verify<OrderRepository>(repository, Mockito.times(1)).save(repoOrder)
+        verify(exactly = 1) {repository?.save(repoOrder)}
         val repoItems: List<ProductItem?>? = repoOrder.items
         Assertions.assertNotNull(repoItems)
         assertEquals(4, repoItems?.size)

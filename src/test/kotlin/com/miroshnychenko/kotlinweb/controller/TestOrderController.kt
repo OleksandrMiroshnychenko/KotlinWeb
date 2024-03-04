@@ -6,13 +6,13 @@ import com.miroshnychenko.kotlinweb.entity.OrderStatus
 import com.miroshnychenko.kotlinweb.entity.User
 import com.miroshnychenko.kotlinweb.service.OrderService
 import com.miroshnychenko.kotlinweb.session.SessionObject
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpSession
 import org.springframework.test.web.servlet.MockMvc
@@ -30,7 +30,7 @@ class TestOrderController {
     @Autowired
     private val mapper: ObjectMapper? = null
 
-    @MockBean
+    @MockkBean
     private val service: OrderService? = null
 
     @Test
@@ -45,6 +45,7 @@ class TestOrderController {
         val content = mapper!!.writeValueAsString(order)
         val session = MockHttpSession()
         session.setAttribute(SessionObject.SESSION_USER.name, user)
+        every { service?.addOrder(order) } returns null
         mockMvc!!.perform(MockMvcRequestBuilders.post("/order")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(content)
@@ -63,7 +64,7 @@ class TestOrderController {
         resultOrder.id = id
         resultOrder.status = OrderStatus.DONE
         val session = MockHttpSession()
-        Mockito.`when`(service?.checkout(id)).thenReturn(resultOrder)
+        every { service?.checkout(id) } returns resultOrder
         session.setAttribute(SessionObject.SESSION_ORDER.name, id)
         mockMvc!!.perform(MockMvcRequestBuilders.get("/order/checkout")
                 .session(session))
@@ -79,7 +80,7 @@ class TestOrderController {
         val order = Order()
         order.id = id
         val session = MockHttpSession()
-        Mockito.`when`(service?.getOrder(id)).thenReturn(order)
+        every { service?.getOrder(id) } returns order
         session.setAttribute(SessionObject.SESSION_ORDER.name, id)
         mockMvc!!.perform(MockMvcRequestBuilders.get("/order")
                 .session(session))

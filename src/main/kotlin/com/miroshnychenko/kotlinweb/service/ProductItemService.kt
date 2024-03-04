@@ -21,16 +21,16 @@ class ProductItemService(private val repository: ProductItemRepository, private 
         }
     }
 
-    fun addItem(order: Order, item: ProductItem): ProductItem? {
+    fun addItem(order: Order?, item: ProductItem): ProductItem? {
         val product: Product? = item.product
         if (product != null && product.available >= item.quantity) {
             calculateItemPrice(item)
             item.order = order
             val savedItem: ProductItem = repository.save(item)
-            var items: MutableList<ProductItem?>? = order.items
+            var items: MutableList<ProductItem?>? = order?.items
             if (items == null) {
                 items = ArrayList<ProductItem?>()
-                order.items = items
+                order?.items = items
             }
             items.add(savedItem)
             return savedItem

@@ -5,14 +5,14 @@ import com.miroshnychenko.kotlinweb.entity.User
 import com.miroshnychenko.kotlinweb.exception.DepotException
 import com.miroshnychenko.kotlinweb.service.UserService
 import com.miroshnychenko.kotlinweb.session.SessionObject
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpSession
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -30,17 +30,20 @@ class TestUserController {
     @Autowired
     private val mapper: ObjectMapper? = null
 
-    @MockBean
+    @MockkBean
     private val service: UserService? = null
 
-    @MockBean
+    @MockkBean
     private val encoder: BCryptPasswordEncoder? = null
 
     @Test
     @DisplayName("returns success message when register the user.")
     @Throws(Exception::class)
     fun checksIfUserSuccessfullyRegister() {
-        val content = mapper!!.writeValueAsString(User("test@test.com", "test123"))
+        val user = User("test@test.com", "test123")
+        val content = mapper!!.writeValueAsString(user)
+        every { service?.getUserByEmail("test@test.com") } returns null
+        every { service?.addUser(user) } returns null
         mockMvc!!.perform(MockMvcRequestBuilders.post("/registration")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(content))
@@ -53,7 +56,7 @@ class TestUserController {
     fun checksConflictInRegistration() {
         val user = User("test@test.com", "test123")
         val content = mapper!!.writeValueAsString(user)
-        Mockito.`when`(service?.getUserByEmail("test@test.com")).thenReturn(user)
+        every { service?.getUserByEmail("test@test.com") } returns user
         mockMvc!!.perform(MockMvcRequestBuilders.post("/registration")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(content))
@@ -67,8 +70,8 @@ class TestUserController {
         val password = "test123"
         val user = User("test@test.com", password)
         val content = mapper!!.writeValueAsString(user)
-        Mockito.`when`(service?.getUserByEmail("test@test.com")).thenReturn(user)
-        Mockito.`when`(encoder!!.matches(password, password)).thenReturn(true)
+        every { service?.getUserByEmail("test@test.com") } returns user
+        every { encoder?.matches(password, password) } returns true
         val session = MockHttpSession()
         mockMvc!!.perform(MockMvcRequestBuilders.post("/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -86,6 +89,7 @@ class TestUserController {
     fun checkUnsuccessfulLogin() {
         val user = User("test@test.com", "test123")
         val content = mapper!!.writeValueAsString(user)
+        every { service?.getUserByEmail("test@test.com") } returns null
         mockMvc!!.perform(MockMvcRequestBuilders.post("/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(content))

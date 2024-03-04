@@ -4,19 +4,18 @@ import com.miroshnychenko.kotlinweb.entity.Order
 import com.miroshnychenko.kotlinweb.entity.Product
 import com.miroshnychenko.kotlinweb.entity.ProductItem
 import com.miroshnychenko.kotlinweb.repository.ProductItemRepository
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import java.util.Optional
 
 @ExtendWith(SpringExtension::class)
 @DisplayName("Checks if user service works as supposed and ")
@@ -25,10 +24,10 @@ class TestProductItemService {
     @Autowired
     private val service: ProductItemService? = null
 
-    @MockBean
+    @MockkBean
     private val productService: ProductService? = null
 
-    @MockBean
+    @MockkBean
     private val repository: ProductItemRepository? = null
 
     @Test
@@ -45,7 +44,7 @@ class TestProductItemService {
         repoItem.product = product
         repoItem.order = order
         repoItem.price = 60.0
-        Mockito.`when`(repository?.save(repoItem)).thenReturn(repoItem)
+        every { repository?.save(repoItem) } returns repoItem
         val serviceItem: ProductItem? = service!!.addItem(order, repoItem)
         Assertions.assertNotNull(serviceItem?.id)
         assertEquals(repoItem, serviceItem)
@@ -69,7 +68,7 @@ class TestProductItemService {
         repoItem.quantity = 4
         repoItem.product = product
         repoItem.order = order
-        Mockito.`when`(repository?.save(repoItem)).thenReturn(repoItem)
+        every { repository?.save(repoItem) } returns repoItem
         Assertions.assertNull(service!!.addItem(order, repoItem))
     }
 
@@ -91,11 +90,12 @@ class TestProductItemService {
     @DisplayName("returns item after removing.")
     fun checkItemRemoving() {
         val id = 1L
+        every { repository?.removeById(id) } returns null
         service!!.removeItem(id)
-        Mockito.verify<ProductItemRepository>(repository, Mockito.times(1)).removeById(id)
+        verify(exactly = 1) { repository?.removeById(id) }
     }
 
-//    @Test
+    @Test
     @DisplayName("returns successfully updated item price.")
     fun checkItemUpdatedCorrectly() {
         val product = Product()
@@ -109,17 +109,18 @@ class TestProductItemService {
         repoItem.quantity = 4
         repoItem.product = product
         repoItem.price = 60.0
-        Mockito.`when`(repository?.findByIdOrNull(ArgumentMatchers.any()!!)).thenReturn(item)
-        Mockito.`when`(repository?.save(ArgumentMatchers.any())).thenReturn(repoItem)
+        every { repository?.findByIdOrNull(any()) } returns item
+        every { repository?.save(any()) } returns repoItem
         val serviceItem: ProductItem? = service!!.updateItem(id, repoItem)
         Assertions.assertNotNull(serviceItem)
-        assertEquals(60, serviceItem?.price)
+        assertEquals(60.0, serviceItem?.price)
         assertEquals(id, serviceItem?.id)
     }
 
     @Test
     @DisplayName("returns null if unsuccessfully updated item price.")
     fun checkUpdatingMissingItem() {
+        every { repository?.findByIdOrNull(any()) } returns null
         Assertions.assertNull(service!!.updateItem(1L, ProductItem()))
     }
 
@@ -133,8 +134,9 @@ class TestProductItemService {
         val item = ProductItem()
         item.quantity = 4
         item.product = product
+        every { productService?.removeItems(any(), any()) } returns null
         service!!.checkoutItem(item)
-        Mockito.verify<ProductService>(productService, Mockito.times(1)).removeItems(product, item.quantity)
+        verify(exactly = 1) { productService?.removeItems(product, item.quantity) }
     }
 
     @Test
@@ -148,6 +150,6 @@ class TestProductItemService {
         item.quantity = 4
         item.product = product
         service!!.checkoutItem(item)
-        Mockito.verify<ProductService>(productService, Mockito.times(0)).removeItems(product, item.quantity)
+        verify(exactly = 0) { productService?.removeItems(product, item.quantity) }
     }
 }

@@ -2,15 +2,15 @@ package com.miroshnychenko.kotlinweb.service
 
 import com.miroshnychenko.kotlinweb.entity.User
 import com.miroshnychenko.kotlinweb.repository.UserRepository
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
 @ExtendWith(SpringExtension::class)
@@ -20,7 +20,7 @@ class TestUserService {
     @Autowired
     private val service: UserService? = null
 
-    @MockBean
+    @MockkBean
     private val repository: UserRepository? = null
 
     @Test
@@ -29,7 +29,7 @@ class TestUserService {
         val user = User()
         val repoUser = User()
         repoUser.id = 1L
-        Mockito.`when`(repository?.save(user)).thenReturn(repoUser)
+        every { repository?.save(user) } returns repoUser
         val serviceUser: User = service!!.addUser(user)
         Assertions.assertNotNull(serviceUser.id)
         assertEquals(repoUser, serviceUser)
@@ -42,7 +42,7 @@ class TestUserService {
         val email = "test@test.com"
         user.email = email
         user.password = email
-        Mockito.`when`(repository?.findUserByEmail(user.email)).thenReturn(user)
+        every { repository?.findUserByEmail(user.email) } returns user
         val serviceUser: User? = service!!.getUserByEmail(user.email)
         assertEquals(user, serviceUser)
     }

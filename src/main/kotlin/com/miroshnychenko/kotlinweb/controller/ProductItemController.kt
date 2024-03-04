@@ -18,7 +18,7 @@ class ProductItemController(private val service: ProductItemService, private val
     fun addItem(@RequestBody item: @Valid ProductItem, @Parameter(hidden = true) session: HttpSession): ProductItem? {
         val id = session.getAttribute(SessionObject.SESSION_ORDER.name) as Long
         val order: Order? = orderService.getOrder(id)
-        return service.addItem(order!!, item)
+        return service.addItem(order, item)
     }
 
     @DeleteMapping("{id}")
